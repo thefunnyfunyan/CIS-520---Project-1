@@ -91,10 +91,14 @@ void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
-
+  ready_list.remove(thread_current ());
+  thread_yeild ();
   ASSERT (intr_get_level () == INTR_ON);
   while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  {
+    
+  }
+  ready_list.push_back(thread_current ());
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be

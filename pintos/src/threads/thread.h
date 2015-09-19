@@ -90,7 +90,7 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
     
-    int donated_priority;               /* Priority after getting a donation*/
+    int base_priority;                  /* Threads base priority, all priority changes are done through priority*/
     struct lock *waiting_for_lock;      /* Pointer to lock thread is waiting for*/
     struct list donaters;               /* List of all threads donating priority to current thread*/
     struct list_elem donation;          /* Amount of priority being donated*/

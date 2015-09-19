@@ -8,6 +8,7 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
   
+  
 /* See [8254] for hardware details of the 8254 timer chip. */
 
 #if TIMER_FREQ < 19
@@ -92,6 +93,7 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+<<<<<<< HEAD
  
  /*Saving the current int_level and then turning intr_level to off */
  enum intr_level level_before_sleep = intr_disable();
@@ -117,6 +119,17 @@ check_for_ready_thread(struct thread *this_thread, void *aux)
    thread_unblock(this_thread);
   }
  }
+=======
+  int64_t start = timer_ticks ();
+  ready_list.remove(thread_current ());
+  thread_yeild ();
+  ASSERT (intr_get_level () == INTR_ON);
+  while (timer_elapsed (start) < ticks) 
+  {
+    
+  }
+  ready_list.push_back(thread_current ());
+>>>>>>> 54511fc33b2cd0909614a1f86e331b9355058df2
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be

@@ -214,9 +214,23 @@ lock_try_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!lock_held_by_current_thread (lock));
 
+  struct *t = thread_current();
+
   success = sema_try_down (&lock->semaphore);
   if (success)
-    lock->holder = thread_current ();
+  {
+    lock->holder = t;
+  }
+    
+   /*If the current lock is in use, set that the current thread is waiting for it
+     Donate the priority that the current thread has, and update the thread holding
+     the lock's donater list*/
+  else
+  {
+     t->waiting_for_lock = lock;
+     lock->holder->donaters.push_back(t);
+     lock->holder->donation.push_back(t->priority);
+  }
   return success;
 }
 

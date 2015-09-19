@@ -89,7 +89,15 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+<<<<<<< HEAD
     int64_t wake_timer;			/* Number of ticks thread should sleep for*/
+=======
+    
+    int base_priority;                  /* Threads base priority, all priority changes are done through priority*/
+    struct lock *waiting_for_lock;      /* Pointer to lock thread is waiting for*/
+    struct list donaters;               /* List of all threads donating priority to current thread*/
+    struct list_elem donation;          /* Amount of priority being donated*/
+>>>>>>> 54511fc33b2cd0909614a1f86e331b9355058df2
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

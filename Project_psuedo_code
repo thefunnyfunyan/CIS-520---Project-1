@@ -1,0 +1,44 @@
+current thread {
+lock_try_aquire = get_lock()
+if lock_aq = false
+{
+	donate priority(lock_holder)
+}
+}
+
+
+donate_pritority(thread*)
+{
+if(tthread->priority<this->priority)
+thread->priority = this->prioroty
+else
+fuck off
+
+}
+
+
+
+
+
+hichgest_priorty ready to go
+{
+int max =0;
+highest priorty thread* = null;
+intrupt level = off
+foreach(in ready list)
+if(list->priority > max)
+	max = list->priority
+	highest priority = thread
+assert(not null)
+intrupt level = on
+return thread*
+
+}
+ 
+
+
+
+
+
+
+

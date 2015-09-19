@@ -29,6 +29,9 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
+/*method for checking blocked thread to see if they are ready, without waking them up */
+static void check_for_ready_thread(struct thread *this_thread, void *aux);
+
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -89,11 +92,31 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+ 
+ /*Saving the current int_level and then turning intr_level to off */
+ enum intr_level level_before_sleep = intr_disable();
+ /*setting the current thread's wake timer */
+ thread_current()->wake_timer = ticks;
+ /*blocking the current thread */
+ thread_block();
+ /*resetting the intr_level to what it was (should be intr_enabled */
+ intr_set_level(level_before_sleep);
+}
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+static void
+check_for_ready_thread(struct thread *this_thread, void *aux)
+{
+/*checking to make sure that the current thread is blocked and the timer is greater than 0*/
+ if(this_thread->status == THREAD_BLOCKED && this_thread->wake_timer>0)
+ {
+ /*decrementing the thread's wake timer */
+  this_thread->wake_timer--;
+  /*Checking if it is time for the thread to wake up, if it is then it unblocks that thread*/
+  if(this_thread->wake_timer == 0)
+  {
+   thread_unblock(this_thread);
+  }
+ }
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -172,6 +195,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  /*now every interrup checks all the threads to see if they are ready*/
+  thread_foreach(check_for_ready_thread, 0);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

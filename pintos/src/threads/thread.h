@@ -108,6 +108,9 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
+void thread_yield_to_higher_priority(void);
+
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -137,6 +140,7 @@ typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
+int thread_get_this_priority (struct thread *t);
 void thread_set_priority (int);
 
 int thread_get_nice (void);

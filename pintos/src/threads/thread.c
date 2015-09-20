@@ -68,8 +68,37 @@ static void init_thread (struct thread *, const char *name, int priority);
 static bool is_thread (struct thread *) UNUSED;
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
+static struct thread * find_highest_priority_ready_thread(void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
+
+static bool sort_by_priority (const struct list_elem *a,
+                             const struct list_elem *b,
+                             void *aux);
+
+
+void thread_yield_to_higher_priority(void)
+{
+  enum intr_level old_level = intr_disable();
+  if(!list_empty(&ready_list))
+  {
+    struct thread *cur = thread_current();
+    struct thread *max = list_entry(list_max(&ready_list,sort_by_priority,NULL), struct thread, elem);
+    if(max->priority > cur->priority)
+    {
+      if(intr_context())
+      {
+        intr_yield_on_return();
+      }
+      else
+      {
+        thread_yield();
+      }
+    }
+  }
+  intr_set_level(old_level);
+}
+
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -143,8 +172,8 @@ thread_tick (void)
 void
 thread_print_stats (void) 
 {
-  printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
-          idle_ticks, kernel_ticks, user_ticks);
+  printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n, %d priority",
+          idle_ticks, kernel_ticks, user_ticks, thread_get_priority());
 }
 
 /* Creates a new kernel thread named NAME with the given initial
@@ -208,7 +237,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
+  thread_yield();
   return tid;
 }
 
@@ -245,7 +274,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list,&t->elem, sort_by_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -316,7 +345,8 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    //list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered(&ready_list, &cur->elem, sort_by_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -344,6 +374,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  thread_yield_to_higher_priority();
 }
 
 /* Returns the current thread's priority. */
@@ -468,7 +499,7 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
-  t->base_priority = t->priority //base_priority should never be set anywhere else but here.
+  t->base_priority = priority; //base_priority should never be set anywhere else but here.
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
 }
@@ -494,11 +525,25 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
+struct thread * shouldFail = NULL;
+  list_sort(&ready_list, sort_by_priority, NULL);
+
   if (list_empty (&ready_list))
     return idle_thread;
   else
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  	//return  find_highest_priority_ready_thread();
 }
+
+bool sort_by_priority (const struct list_elem *a_,
+                             const struct list_elem *b_,
+                             void *aux)
+{
+  const struct thread *a = list_entry(a_, struct thread, elem);
+  const struct thread *b = list_entry(b_, struct thread, elem);
+  return a->priority > b->priority;
+}
+
 
 /* Completes a thread switch by activating the new thread's page
    tables, and, if the previous thread is dying, destroying it.
@@ -567,7 +612,10 @@ schedule (void)
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
+  //printf("cur: %d\n", cur->priority);
+  //printf("next: %d\n", cur->priority);
 }
+	
 
 /* Returns a tid to use for a new thread. */
 static tid_t

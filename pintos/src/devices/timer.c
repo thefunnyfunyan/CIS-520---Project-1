@@ -93,21 +93,24 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+ if(ticks>0)
+ {
  
- /*Saving the current int_level and then turning intr_level to off */
- enum intr_level level_before_sleep = intr_disable();
- /*setting the current thread's wake timer */
- thread_current()->wake_timer = ticks;
- /*blocking the current thread */
- thread_block();
- /*resetting the intr_level to what it was (should be intr_enabled */
- intr_set_level(level_before_sleep);
+   /*Saving the current int_level and then turning intr_level to off */
+   enum intr_level level_before_sleep = intr_disable();
+   /*setting the current thread's wake timer */
+   thread_current()->wake_timer = ticks;
+   /*blocking the current thread */
+   thread_block();
+   /*resetting the intr_level to what it was (should be intr_enabled */
+   intr_set_level(level_before_sleep);
+ }
 }
 
 static void
 check_for_ready_thread(struct thread *this_thread, void *aux)
 {
-/*checking to make sure that the current thread is blocked and the timer is greater than 0*/
+ /*checking to make sure that the current thread is blocked and the timer is greater than 0*/
  if(this_thread->status == THREAD_BLOCKED && this_thread->wake_timer>0)
  {
  /*decrementing the thread's wake timer */
